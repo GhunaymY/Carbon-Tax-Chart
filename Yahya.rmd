@@ -1,0 +1,85 @@
+## Natural Gas Prices in Alberta
+
+#### [Ghunaym Yahya](https://www.linkedin.com/in/ghunaym-yahya-ab5b251b3/) 
+
+The Carbon Tax has become a central point of discussion for Canadians, particularly those in Alberta. Introduced in 2019 at 20 dollars per tonne, it has steadily increased, reaching $80 per tonne on April 1, 2024, with plans for further increments until 2030. This policy addresses the negative externality of pollution, aiming to hold polluters accountable for their emissions. The significance of this graph, depicting Marketable Natural Gas prices (Adjusted for Carbon Pricing) in Alberta with a marker for the introduction of the tax, cannot be overstated. It serves as a visual representation of how carbon pricing influences market dynamics, potentially impacting consumer costs and business strategies. As the tax escalates, it becomes imperative for Albertans to closely monitor these trends, as they hold implications for both economic decisions and environmental stewardship.
+
+```{r packages-data,echo=F,output=F, warning=FALSE,include=F}
+suppressPackageStartupMessages({
+  library(kableExtra)
+  library(readxl)
+  library(janitor)
+  library(tidyverse)
+  library(lubridate)
+  library(scales)
+  library(viridis)
+  library(ggplot2)
+  library(ggdark)
+  library(scales)
+  library(dplyr)
+  library(lubridate)
+})
+knitr::opts_chunk$set(echo=FALSE, warning=FALSE, message=FALSE)
+```
+
+```{r warning=FALSE,echo=FALSE,include=FALSE}
+# Read the data from the CSV file
+regulated_data <- read.csv("Yahya.csv", stringsAsFactors = FALSE)%>%
+  clean_names()%>%
+  mutate(date=mdy(effective_start_date_mm_dd_yyyy),
+         natural_gas_gj=as.numeric(gsub("=","",natural_gas_gj)),
+         year=year(date),
+         carbon_tax=
+          case_when(
+    year <= 2015 ~ 0,
+    year == 2016 ~ 0,
+    year == 2017 ~ 20,
+    year == 2018 ~ 30,
+    year == 2019 ~ 30,
+    year == 2020 ~ 30,
+    (year == 2021)& (month(date)<4) ~ 30,
+    (year == 2021)& (month(date)>=4) ~ 40,
+    (year == 2022)& (month(date)<4) ~ 40,
+    (year == 2022)& (month(date)>=4) ~ 50,
+    (year == 2023)& (month(date)<4) ~ 50,
+    (year == 2023)& (month(date)>=4) ~ 65,
+    (year == 2024)& (month(date)<4) ~ 65,
+    (year == 2024)& (month(date)>=4) ~ 80,
+    TRUE                      ~  30 
+  ),
+  carbon_tax_gj=carbon_tax*0.0512
+         )%>%
+  select(year,date,natural_gas_gj,carbon_tax,carbon_tax_gj)
+```
+
+
+```{r fig.width=10,dpi=200,warning=FALSE}
+ggplot(regulated_data) +
+  geom_line(aes(date,natural_gas_gj,lty="Natural Gas"),color = "white") +
+  geom_line(aes(date,natural_gas_gj+carbon_tax_gj,lty="Natural Gas Plus Carbon Charge"),color = "white") +
+  #geom_ribbon(aes(ymin = 0, ymax = AveragePrice), fill = "#c7ade5", alpha = 0.3) +
+  scale_linetype_manual("",values=c("solid","dotted"))+
+  scale_x_date(date_breaks = "1 year") +
+  labs(
+    title = "Natural Gas Prices (Regulated Rate) in Alberta Plus Carbon Charges",
+    x = "",
+    y = "$ per gigajoule",
+    caption = "Source: Utilities Consumer Advocate, Graph by Ghunaym Yahya"
+  ) +
+  dark_theme_linedraw() +
+  theme(
+    axis.text.x = element_text(angle = 45, hjust = 1, family = "Courier-Bold"),
+    axis.title.y = element_text(family = "Courier-Bold"),
+    plot.title = element_text(hjust = 0.5, family = "Courier-Bold"),
+    plot.margin = unit(c(1, 1, 1, 1), "lines"),
+    legend.position = "bottom",
+  ) +
+  geom_vline(xintercept = 2019, color = "white", linetype = "dashed", size = 1) +
+  annotate("text", x = ymd("2017-01-01"), y = 5, label = "Carbon Tax Introduced                   ", 
+           color = "white", angle = 90, hjust = 0,vjust = 0.5, family = "Courier-Bold") 
+
+
+
+```
+
+My name is Ghunaym Yahya, in my fourth year studying Computer Science and Economics with a keen interest in Data Science. I'm a big sports fan, and I love analyzing stats to uncover what they really tell us. This course has been a highlight for me, equipping me with skills to work with data in ways I never thought possible. When I'm not immersed in sports, I enjoy adding to my watch collection and keeping fit at the gym.
